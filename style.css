@@ -223,6 +223,9 @@ body {
 .gif-btn:hover { background-color: #00f5d4; color: var(--bg-dark); box-shadow: 0 0 20px rgba(0,245,212,0.4); }
 .twitter-btn { border-color: #1da1f2; }
 .twitter-btn:hover { background-color: #1da1f2; color: var(--bg-dark); box-shadow: 0 0 20px rgba(29,161,242,0.4); }
+.discord-btn { border-color: #5865F2; }
+.discord-btn:hover { background-color: #5865F2; color: var(--bg-dark); box-shadow: 0 0 20px rgba(88,101,242,0.4); }
+
 
 /* ─── PREVIEW PANEL ─── */
 .preview-panel { display: flex; flex-direction: column; align-items: center; }

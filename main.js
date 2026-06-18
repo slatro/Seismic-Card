@@ -1,9 +1,31 @@
 import html2canvas from 'html2canvas';
 import gifshot from 'gifshot';
 
+// ─── Discord Configuration ──────────────────────────────────────
+const DISCORD_CLIENT_ID = '1517138500485513417';
+const DISCORD_GUILD_ID  = '1343751435711414362';
+
+// Mapping of Discord Role ID -> Role key (mag1 to mag9, leader, administrator)
+// Admin can adjust these keys based on their live Discord server role IDs.
+const DISCORD_ROLE_MAP = {
+    "1343751435711414363": "mag1",
+    "1343751435711414364": "mag2",
+    "1343751435711414365": "mag3",
+    "1343751435711414366": "mag4",
+    "1343751435711414367": "mag5",
+    "1343751435711414368": "mag6",
+    "1343751435711414369": "mag7",
+    "1343751435711414370": "mag8",
+    "1343751435711414371": "mag9",
+    "1343751435711414372": "leader",
+    "1343751435711414373": "administrator"
+};
+
 // ─── DOM ───────────────────────────────────────────────────────
 const usernameInput     = document.getElementById('username-input');
 const cardUsername      = document.getElementById('card-username');
+const discordConnectBtn = document.getElementById('discord-connect-btn');
+const discordStatus     = document.getElementById('discord-status');
 const cardRoleTitle     = document.getElementById('card-role-title');
 const cardSerial        = document.getElementById('card-serial');
 const seismicCard       = document.getElementById('seismic-card');
@@ -1018,3 +1040,138 @@ Join the @SeismicSys community, check your stats and craft your card here: https
         window.open(shareUrl, '_blank');
     });
 }
+
+// ─── Discord OAuth2 Integration ────────────────────────────────
+function getDiscordAuthorizeUrl() {
+    const redirectUri = window.location.origin + '/';
+    return `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=identify%20guilds.members.read`;
+}
+
+if (discordConnectBtn) {
+    discordConnectBtn.addEventListener('click', () => {
+        window.location.href = getDiscordAuthorizeUrl();
+    });
+}
+
+async function fetchDiscordUser(accessToken) {
+    try {
+        const userRes = await fetch('https://discord.com/api/users/@me', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        
+        if (!userRes.ok) throw new Error('Failed to fetch Discord user info');
+        const userData = await userRes.json();
+        
+        const username = userData.username;
+        const userId = userData.id;
+        const avatarHash = userData.avatar;
+        
+        // Update input field and preview username
+        usernameInput.value = username;
+        cardUsername.textContent = username;
+        
+        // Load Discord avatar
+        if (avatarHash) {
+            const ext = avatarHash.startsWith('a_') ? 'gif' : 'png';
+            const avatarUrl = `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.${ext}`;
+            tryLoad(avatarUrl, showPlaceholder);
+        } else {
+            showPlaceholder();
+        }
+        
+        // Fetch server member details
+        if (discordStatus) {
+            discordStatus.style.display = 'block';
+            discordStatus.textContent = `Connected as @${username}. Reading server details...`;
+        }
+        
+        const memberRes = await fetch(`https://discord.com/api/users/@me/guilds/${DISCORD_GUILD_ID}/member`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        
+        if (memberRes.status === 404) {
+            // Not in server
+            if (discordStatus) {
+                discordStatus.textContent = 'Note: You are not in the Discord server!';
+                discordStatus.style.color = '#ff0000';
+            }
+            updateSerial();
+            return;
+        }
+        
+        if (!memberRes.ok) throw new Error('Failed to fetch Discord guild member info');
+        const memberData = await memberRes.json();
+        
+        // Success! Member is in the server. Let's update nickname (if any) and roles
+        if (memberData.nick) {
+            usernameInput.value = memberData.nick;
+            cardUsername.textContent = memberData.nick;
+        }
+        
+        // Print roles to console for developer setup convenience
+        console.log(`[Seismic Card] Discord authentication successful!`);
+        console.log(`User ID: ${userId}`);
+        console.log(`Guild Roles:`, memberData.roles);
+        console.log(`To map these roles to Magnitude roles, paste these role IDs in the DISCORD_ROLE_MAP in main.js!`);
+        
+        // Find matching role in the role map
+        let detectedRole = null;
+        for (const roleId of memberData.roles) {
+            if (DISCORD_ROLE_MAP[roleId]) {
+                detectedRole = DISCORD_ROLE_MAP[roleId];
+                break;
+            }
+        }
+        
+        if (detectedRole) {
+            // Find button and trigger click to select role
+            const btn = document.querySelector(`.role-btn[data-role="${detectedRole}"]`);
+            if (btn) {
+                btn.click();
+            }
+            if (discordStatus) {
+                discordStatus.textContent = `Discord Linked: @${username} (${cardRoleTitle.textContent})`;
+                discordStatus.style.color = '#10e566';
+            }
+        } else {
+            if (discordStatus) {
+                discordStatus.textContent = `Discord Linked: @${username} (No Magnitude role detected)`;
+                discordStatus.style.color = '#dfc086';
+            }
+        }
+        
+        updateSerial();
+    } catch (err) {
+        console.error('Discord auth fetch error:', err);
+        if (discordStatus) {
+            discordStatus.textContent = 'Discord connection failed.';
+            discordStatus.style.color = '#ff0000';
+        }
+    }
+}
+
+function checkDiscordAuth() {
+    const hash = window.location.hash;
+    if (!hash) return;
+
+    const params = new URLSearchParams(hash.substring(1));
+    const accessToken = params.get('access_token');
+    
+    if (accessToken) {
+        // Clean URL hash so the token is not visible in address bar
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Show loading status
+        if (discordStatus) {
+            discordStatus.style.display = 'block';
+            discordStatus.textContent = 'Authenticating with Discord...';
+            discordStatus.style.color = '#dfc086';
+        }
+        
+        fetchDiscordUser(accessToken);
+    }
+}
+
+// Check on startup
+checkDiscordAuth();
+
