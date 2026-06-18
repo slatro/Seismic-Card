@@ -997,7 +997,7 @@ if (shareTwitterBtn) {
 
 • Serial: ${serial}
 
-Join the @SeismicSys community, check your stats and craft your card here: https://seismic-card.vercel.app`;
+Join the @SeismicSys community, check your stats and craft your card here: https://seismicc-cards.vercel.app`;
 
         const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
         window.open(shareUrl, '_blank');
