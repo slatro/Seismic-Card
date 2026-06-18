@@ -105,7 +105,6 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    align-self: start;
 }
 .control-group { display: flex; flex-direction: column; gap: 0.5rem; }
 .control-group > label { font-family: var(--font-pixel); font-size: 0.7rem; opacity: 0.85; }
@@ -202,12 +201,6 @@ body {
     box-shadow: 0 0 5px var(--theme-glow);
     outline: none;
 }
-.metric-input-row input:disabled {
-    opacity: 0.45;
-    background-color: var(--bg-dark);
-    border-color: var(--stone-dark);
-    cursor: not-allowed;
-}
 .label-desc { font-size: 0.55rem; font-family: var(--font-sans); opacity: 0.55; vertical-align: middle; }
 
 /* Action Buttons */
@@ -230,9 +223,6 @@ body {
 .gif-btn:hover { background-color: #00f5d4; color: var(--bg-dark); box-shadow: 0 0 20px rgba(0,245,212,0.4); }
 .twitter-btn { border-color: #1da1f2; }
 .twitter-btn:hover { background-color: #1da1f2; color: var(--bg-dark); box-shadow: 0 0 20px rgba(29,161,242,0.4); }
-.discord-btn { border-color: #5865F2; }
-.discord-btn:hover { background-color: #5865F2; color: var(--bg-dark); box-shadow: 0 0 20px rgba(88,101,242,0.4); }
-
 
 /* ─── PREVIEW PANEL ─── */
 .preview-panel { display: flex; flex-direction: column; align-items: center; }

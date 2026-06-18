@@ -1,48 +1,9 @@
 import html2canvas from 'html2canvas';
 import gifshot from 'gifshot';
 
-// ─── Discord Configuration ──────────────────────────────────────
-const DISCORD_CLIENT_ID = '1517138500485513417';
-const DISCORD_GUILD_ID  = '1343751435711414362';
-// Dynamically determine the bot's API URL based on query parameter (?api=...), localStorage, or host origin
-const getApiUrl = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const paramApi = urlParams.get('api');
-    if (paramApi) {
-        localStorage.setItem('seismic_api_url', paramApi);
-        return paramApi;
-    }
-    const cached = localStorage.getItem('seismic_api_url');
-    if (cached) return cached;
-    
-    // Fallback logic
-    if (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) {
-        return 'http://localhost:3000';
-    }
-    return window.location.origin; // Assume backend runs on same origin (e.g. if bot serves UI)
-};
-const STATS_API_URL = getApiUrl();
-
-// Mapping of Discord Role ID -> Role key (mag1 to mag9, leader, administrator)
-// Admin can adjust these keys based on their live Discord server role IDs.
-const DISCORD_ROLE_MAP = {
-    "1343751435711414363": "mag1",
-    "1343751435711414364": "mag2",
-    "1343751435711414365": "mag3",
-    "1343751435711414366": "mag4",
-    "1343751435711414367": "mag5",
-    "1343751435711414368": "mag6",
-    "1343751435711414369": "mag7",
-    "1343751435711414370": "mag8",
-    "1343751435711414371": "mag9",
-    "1343751435711414372": "leader",
-    "1343751435711414373": "administrator"
-};
-
 // ─── DOM ───────────────────────────────────────────────────────
+const usernameInput     = document.getElementById('username-input');
 const cardUsername      = document.getElementById('card-username');
-const discordConnectBtn = document.getElementById('discord-connect-btn');
-const discordStatus     = document.getElementById('discord-status');
 const cardRoleTitle     = document.getElementById('card-role-title');
 const cardSerial        = document.getElementById('card-serial');
 const seismicCard       = document.getElementById('seismic-card');
@@ -125,7 +86,6 @@ function initHtmlParticles() {
 }
 
 // Global state
-let currentUsername = 'seismic_mag';
 let activeStamp     = 'seismic';
 let avatarDebounce  = null;
 let currentThemeHex = '#a0522d';
@@ -215,7 +175,7 @@ function getOrAssignId(username) {
 }
 
 function getSerialText() {
-    const name = currentUsername;
+    const name = usernameInput.value.trim() || 'operator';
     const id = getOrAssignId(name);
     const padded = id.toString().padStart(3, '0');
     return `ID // SC - ${padded}`;
@@ -804,6 +764,21 @@ function removeBg(src, callback) {
 }
 
 // ─── Events ────────────────────────────────────────────────────
+let lastCommittedName = usernameInput.value.trim();
+function commitUsername() {
+    const name = usernameInput.value.trim();
+    if (name === lastCommittedName) return;
+    lastCommittedName = name;
+    updateSerial();
+    loadAvatar(name);
+}
+
+usernameInput.addEventListener('input', (e) => {
+    const name = e.target.value.trim();
+    cardUsername.textContent = name ? name : 'operator';
+});
+usernameInput.addEventListener('change', commitUsername);
+usernameInput.addEventListener('blur', commitUsername);
 
 document.querySelectorAll('.role-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -824,21 +799,13 @@ document.querySelectorAll('.stamp-btn').forEach(btn => {
     });
 });
 
-if (inputMessages) {
-    inputMessages.addEventListener('input', e => {
-        cardValMessages.textContent = formatNum(e.target.value);
-        updateSerial();
-    });
-}
-if (inputTweets) {
-    inputTweets.addEventListener('input',   e => cardValTweets.textContent   = formatNum(e.target.value));
-}
-if (inputEvents) {
-    inputEvents.addEventListener('input',   e => cardValEvents.textContent   = formatNum(e.target.value));
-}
-if (inputArt) {
-    inputArt.addEventListener('input',      e => cardValArt.textContent      = formatNum(e.target.value));
-}
+inputMessages.addEventListener('input', e => {
+    cardValMessages.textContent = formatNum(e.target.value);
+    updateSerial();
+});
+inputTweets.addEventListener('input',   e => cardValTweets.textContent   = formatNum(e.target.value));
+inputEvents.addEventListener('input',   e => cardValEvents.textContent   = formatNum(e.target.value));
+inputArt.addEventListener('input',      e => cardValArt.textContent      = formatNum(e.target.value));
 
 // Helper to temporarily swap remote avatar to a CORS-safe blob URL for canvas exporting
 async function executeWithCorsSafeAvatar(action) {
@@ -910,7 +877,7 @@ downloadBtn.addEventListener('click', async () => {
         await executeWithCorsSafeAvatar(async () => {
             const canvas = await captureCardCanvas(3, null);
             const link = document.createElement('a');
-            link.download = `seismic_golem_${currentUsername}_card.png`;
+            link.download = `seismic_golem_${usernameInput.value.trim() || 'operator'}_card.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
         });
@@ -972,7 +939,7 @@ downloadGifBtn.addEventListener('click', async () => {
                     }, obj => {
                         if (!obj.error) {
                             const link = document.createElement('a');
-                            link.download = `seismic_golem_${currentUsername}_card.gif`;
+                            link.download = `seismic_golem_${usernameInput.value.trim() || 'operator'}_card.gif`;
                             link.href = obj.image;
                             link.click();
                         } else {
@@ -1012,7 +979,7 @@ removeBg('/golem.gif', cleanSrc => {
 initHtmlParticles();
 updateSerial();
 renderStamp();
-loadAvatar(currentUsername);
+loadAvatar(usernameInput.value.trim());
 
 // Manual avatar upload handler (still works if triggered programmatically or via a future button, but not by clicking the avatar zone)
 const avatarUpload = document.getElementById('avatar-upload');
@@ -1051,236 +1018,3 @@ Join the @SeismicSys community, check your stats and craft your card here: https
         window.open(shareUrl, '_blank');
     });
 }
-
-// ─── Discord OAuth2 Integration ────────────────────────────────
-function getDiscordAuthorizeUrl() {
-    const redirectUri = window.location.origin + '/';
-    return `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=identify%20guilds.members.read`;
-}
-
-if (discordConnectBtn) {
-    discordConnectBtn.addEventListener('click', () => {
-        window.location.href = getDiscordAuthorizeUrl();
-    });
-}
-
-async function fetchDiscordUser(accessToken) {
-    try {
-        const userRes = await fetch('https://discord.com/api/users/@me', {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        
-        if (!userRes.ok) throw new Error('Failed to fetch Discord user info');
-        const userData = await userRes.json();
-        
-        const username = userData.username;
-        const userId = userData.id;
-        const avatarHash = userData.avatar;
-        
-        // Update username state and preview (using global discord username, no nick override)
-        currentUsername = username;
-        cardUsername.textContent = username;
-        
-        // Load Discord avatar
-        if (avatarHash) {
-            const ext = avatarHash.startsWith('a_') ? 'gif' : 'png';
-            const avatarUrl = `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.${ext}`;
-            tryLoad(avatarUrl, showPlaceholder);
-        } else {
-            showPlaceholder();
-        }
-        
-        // Fetch server member details
-        if (discordStatus) {
-            discordStatus.style.display = 'block';
-            discordStatus.textContent = `Connected as @${username}. Reading server details...`;
-        }
-        
-        const memberRes = await fetch(`https://discord.com/api/users/@me/guilds/${DISCORD_GUILD_ID}/member`, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        
-        if (memberRes.status === 404) {
-            // Not in server
-            if (discordStatus) {
-                discordStatus.textContent = 'Note: You are not in the Discord server!';
-                discordStatus.style.color = '#ff0000';
-            }
-            updateSerial();
-            return;
-        }
-        
-        if (!memberRes.ok) throw new Error('Failed to fetch Discord guild member info');
-        const memberData = await memberRes.json();
-        
-        // Success! Member is in the server. Print roles to console for developer setup convenience
-        console.log(`[Seismic Card] Discord authentication successful!`);
-        console.log(`User ID: ${userId}`);
-        console.log(`Guild Roles:`, memberData.roles);
-        
-        let detectedRole = null;
-
-        // Try querying the bot member resolver API first (which performs name-based match)
-        try {
-            const botMemberRes = await fetch(`${STATS_API_URL}/api/member/${userId}`);
-            if (botMemberRes.ok) {
-                const botMemberData = await botMemberRes.json();
-                if (botMemberData.detectedRole) {
-                    detectedRole = botMemberData.detectedRole;
-                    console.log(`[Seismic Card] Bot API resolved role: ${detectedRole}`);
-                }
-            }
-        } catch (botErr) {
-            console.warn('Could not query bot API for role name matching, using client ID map fallback:', botErr);
-        }
-
-        // Fallback to client ID role map
-        if (!detectedRole) {
-            // 1. Check Administrator
-            const adminRoleId = Object.keys(DISCORD_ROLE_MAP).find(key => DISCORD_ROLE_MAP[key] === 'administrator');
-            if (adminRoleId && memberData.roles.includes(adminRoleId)) {
-                detectedRole = 'administrator';
-            }
-            
-            // 2. Check Leader
-            if (!detectedRole) {
-                const leaderRoleId = Object.keys(DISCORD_ROLE_MAP).find(key => DISCORD_ROLE_MAP[key] === 'leader');
-                if (leaderRoleId && memberData.roles.includes(leaderRoleId)) {
-                    detectedRole = 'leader';
-                }
-            }
-            
-            // 3. Check Magnitude roles (from Magnitude 9.0 down to 1.0)
-            if (!detectedRole) {
-                const magnitudeOrder = ['mag9', 'mag8', 'mag7', 'mag6', 'mag5', 'mag4', 'mag3', 'mag2', 'mag1'];
-                for (const magKey of magnitudeOrder) {
-                    const roleId = Object.keys(DISCORD_ROLE_MAP).find(key => DISCORD_ROLE_MAP[key] === magKey);
-                    if (roleId && memberData.roles.includes(roleId)) {
-                        detectedRole = magKey;
-                        break; // stop at highest magnitude found
-                    }
-                }
-            }
-        }
-        
-        const ROLE_TEXTS = {
-            mag1: "Magnitude 1.0",
-            mag2: "Magnitude 2.0",
-            mag3: "Magnitude 3.0",
-            mag4: "Magnitude 4.0",
-            mag5: "Magnitude 5.0",
-            mag6: "Magnitude 6.0",
-            mag7: "Magnitude 7.0",
-            mag8: "Magnitude 8.0",
-            mag9: "Magnitude 9.0",
-            leader: "LEADER",
-            administrator: "ADMINISTRATOR"
-        };
-        
-        if (detectedRole) {
-            const roleInfo = ROLE_COLORS[detectedRole];
-            if (roleInfo) {
-                applyTheme(roleInfo.hex, roleInfo.rgb);
-            }
-            const roleName = ROLE_TEXTS[detectedRole] || detectedRole;
-            cardRoleTitle.textContent = roleName;
-            
-            // Apply correct styling class on the card element
-            seismicCard.className = `seismic-card role-${detectedRole}`;
-            
-            if (discordStatus) {
-                discordStatus.textContent = `Discord Linked: @${username} (${roleName})`;
-                discordStatus.style.color = '#10e566';
-            }
-        } else {
-            cardRoleTitle.textContent = "No Magnitude Role";
-            seismicCard.className = `seismic-card role-mag1`;
-            if (discordStatus) {
-                discordStatus.innerHTML = `Discord Linked: @${username} (No Magnitude role detected)<br><span style="font-size:0.65rem;font-weight:normal;opacity:0.8;display:block;margin-top:4px;color:#c9a76d;">Note: Configure your bot URL via: <strong style="color:#fff;">?api=http://YOUR_VPS_IP:3000</strong></span>`;
-                discordStatus.style.color = '#dfc086';
-            }
-        }
-
-        // Change button state to LINKED and disable it
-        if (discordConnectBtn) {
-            discordConnectBtn.disabled = true;
-            discordConnectBtn.style.opacity = '0.7';
-            discordConnectBtn.style.cursor = 'default';
-            const btnText = discordConnectBtn.querySelector('.btn-text');
-            if (btnText) {
-                btnText.textContent = 'DISCORD LINKED';
-            }
-        }
-        
-        // Fetch Stats from our companion Bot API
-        try {
-            const statsRes = await fetch(`${STATS_API_URL}/api/stats/${userId}`);
-            if (statsRes.ok) {
-                const statsData = await statsRes.json();
-                
-                // Set inputs value (if they exist in DOM)
-                if (inputMessages) inputMessages.value = statsData.messages || 0;
-                if (inputTweets) inputTweets.value   = statsData.tweets || 0;
-                if (inputEvents) inputEvents.value   = statsData.events || 0;
-                if (inputArt) inputArt.value      = statsData.arts || 0;
-                
-                // Set card display values
-                cardValMessages.textContent = formatNum(statsData.messages || 0);
-                cardValTweets.textContent   = formatNum(statsData.tweets || 0);
-                cardValEvents.textContent   = formatNum(statsData.events || 0);
-                cardValArt.textContent      = formatNum(statsData.arts || 0);
-                
-                // Disable inputs if they exist in DOM
-                if (inputMessages) inputMessages.disabled = true;
-                if (inputTweets) inputTweets.disabled   = true;
-                if (inputEvents) inputEvents.disabled   = true;
-                if (inputArt) inputArt.disabled      = true;
-            }
-        } catch (apiErr) {
-            console.warn('Companion Bot API stats fetch failed.', apiErr);
-        }
-        
-        updateSerial();
-    } catch (err) {
-        console.error('Discord auth fetch error:', err);
-        if (discordStatus) {
-            discordStatus.textContent = 'Discord connection failed.';
-            discordStatus.style.color = '#ff0000';
-        }
-    }
-}
-
-function checkDiscordAuth() {
-    const hash = window.location.hash;
-    if (!hash) return;
-
-    const params = new URLSearchParams(hash.substring(1));
-    const accessToken = params.get('access_token');
-    
-    if (accessToken) {
-        // Clean URL hash so the token is not visible in address bar
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Show loading status
-        if (discordStatus) {
-            discordStatus.style.display = 'block';
-            discordStatus.textContent = 'Authenticating with Discord...';
-            discordStatus.style.color = '#dfc086';
-        }
-        
-        // Change button state to AUTHENTICATING
-        if (discordConnectBtn) {
-            discordConnectBtn.disabled = true;
-            const btnText = discordConnectBtn.querySelector('.btn-text');
-            if (btnText) {
-                btnText.textContent = 'AUTHENTICATING...';
-            }
-        }
-        
-        fetchDiscordUser(accessToken);
-    }
-}
-
-// Check on startup
-checkDiscordAuth();
-
