@@ -4,10 +4,10 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 
-// ─── Configuration ──────────────────────────────────────────────
 const TOKEN = process.env.DISCORD_TOKEN || 'YOUR_BOT_TOKEN_HERE';
 const CONTENT_CHANNEL_ID = process.env.CONTENT_CHANNEL_ID || 'YOUR_CONTENT_CHANNEL_ID';
 const STATS_CHANNEL_ID = process.env.STATS_CHANNEL_ID || 'YOUR_STATS_CHANNEL_ID';
+const GUILD_ID = process.env.GUILD_ID || '1343751435711414362';
 const PORT = process.env.PORT || 3000;
 
 // Database path
@@ -160,6 +160,66 @@ app.get('/api/stats/:userId', (req, res) => {
     const userId = req.params.userId;
     const stats = getUserStats(userId);
     res.json(stats);
+});
+
+// API route to get user member details and resolve role dynamically by name
+app.get('/api/member/:userId', async (req, res) => {
+    const userId = req.params.userId;
+    try {
+        const guild = client.guilds.cache.get(GUILD_ID);
+        if (!guild) {
+            return res.status(404).json({ error: 'Guild not found' });
+        }
+        
+        const member = await guild.members.fetch(userId).catch(() => null);
+        if (!member) {
+            return res.status(404).json({ error: 'Member not found in guild' });
+        }
+        
+        // Find highest role by name/permissions
+        let detectedRole = null;
+        const roles = member.roles.cache.map(r => ({ id: r.id, name: r.name }));
+        
+        // 1. Check Administrator
+        const hasAdmin = member.permissions.has('Administrator') || roles.some(r => r.name.toLowerCase() === 'administrator' || r.name.toLowerCase() === 'admin');
+        if (hasAdmin) {
+            detectedRole = 'administrator';
+        }
+        
+        // 2. Check Leader
+        if (!detectedRole) {
+            const hasLeader = roles.some(r => r.name.toLowerCase() === 'leader');
+            if (hasLeader) {
+                detectedRole = 'leader';
+            }
+        }
+        
+        // 3. Check Magnitude roles (Magnitude 9.0 down to Magnitude 1.0)
+        if (!detectedRole) {
+            for (let i = 9; i >= 1; i--) {
+                const searchName = `magnitude ${i}`;
+                const hasMag = roles.some(r => {
+                    const nameLower = r.name.toLowerCase();
+                    return nameLower.includes(searchName) || nameLower === `mag ${i}` || nameLower === `magnitude${i}`;
+                });
+                if (hasMag) {
+                    detectedRole = `mag${i}`;
+                    break;
+                }
+            }
+        }
+        
+        res.json({
+            id: member.id,
+            username: member.user.username,
+            displayName: member.displayName,
+            detectedRole: detectedRole,
+            roles: roles
+        });
+    } catch (err) {
+        console.error('Error fetching member details:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // API route to manually update/reset a user's stats (for admin convenience)
