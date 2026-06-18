@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seismic Card - Profile Card Generator</title>
+    <script>
+        window.addEventListener('error', function(e) {
+            alert("Error: " + e.message + "\nFile: " + e.filename + "\nLine: " + e.lineno + ":" + e.colno);
+        });
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div class="scanlines"></div>
+
+    <header class="app-header">
+        <div class="header-logo">
+            <img class="header-icon" src="/crystal.png" alt="Crystal">
+            <h1>SEISMIC CARD</h1>
+            <img class="header-icon" src="/crystal.png" alt="Crystal">
+        </div>
+        <p class="subtitle">// MAGNITUDE INTERFACE v2.06</p>
+    </header>
+
+    <main class="app-container">
+        <!-- Control Panel (Left Side) -->
+        <section class="controls-panel">
+            <h2 class="panel-title">SEISMIC PANEL</h2>
+            
+            <div class="control-group">
+                <label for="username-input">X USERNAME</label>
+                <div class="input-wrapper">
+                    <span class="input-prefix">@</span>
+                    <input type="text" id="username-input" placeholder="seismic_mag" maxlength="50" value="seismic_mag">
+                </div>
+                <p class="input-hint">Profile picture loads automatically</p>
+            </div>
+
+            <div class="control-group">
+                <label>DISCORD ROLE</label>
+                <div class="role-grid">
+                    <button class="role-btn active" data-role="mag1" style="--role-color: #dfc086;">
+                        <span class="role-dot"></span> Magnitude 1.0
+                    </button>
+                    <button class="role-btn" data-role="mag2" style="--role-color: #4fc397;">
+                        <span class="role-dot"></span> Magnitude 2.0
+                    </button>
+                    <button class="role-btn" data-role="mag3" style="--role-color: #10e566;">
+                        <span class="role-dot"></span> Magnitude 3.0
+                    </button>
+                    <button class="role-btn" data-role="mag4" style="--role-color: #86e245;">
+                        <span class="role-dot"></span> Magnitude 4.0
+                    </button>
+                    <button class="role-btn" data-role="mag5" style="--role-color: #a6b70f;">
+                        <span class="role-dot"></span> Magnitude 5.0
+                    </button>
+                    <button class="role-btn" data-role="mag6" style="--role-color: #e5b800;">
+                        <span class="role-dot"></span> Magnitude 6.0
+                    </button>
+                    <button class="role-btn" data-role="mag7" style="--role-color: #f37021;">
+                        <span class="role-dot"></span> Magnitude 7.0
+                    </button>
+                    <button class="role-btn" data-role="mag8" style="--role-color: #ff0000;">
+                        <span class="role-dot"></span> Magnitude 8.0
+                    </button>
+                    <button class="role-btn" data-role="mag9" style="--role-color: #00d8ff;">
+                        <span class="role-dot"></span> Magnitude 9.0
+                    </button>
+                </div>
+                <div class="role-grid role-grid-staff">
+                    <button class="role-btn" data-role="leader" style="--role-color: #965a38;">
+                        <span class="role-dot"></span> LEADER
+                    </button>
+                    <button class="role-btn" data-role="administrator" style="--role-color: #9b59b6;">
+                        <span class="role-dot"></span> ADMINISTRATOR
+                    </button>
+                </div>
+            </div>
+
+
+
+            <div class="control-group">
+                <label>CORE METRICS <span class="label-desc">(Check on Seismic stats channel)</span></label>
+                <div class="metric-inputs">
+                    <div class="metric-input-row">
+                        <label for="input-messages">TOTAL MESSAGES</label>
+                        <input type="number" id="input-messages" value="1540" min="0">
+                    </div>
+                    <div class="metric-input-row">
+                        <label for="input-tweets">TWEET COUNT</label>
+                        <input type="number" id="input-tweets" value="184" min="0">
+                    </div>
+                    <div class="metric-input-row">
+                        <label for="input-events">EVENTS JOINED</label>
+                        <input type="number" id="input-events" value="12" min="0">
+                    </div>
+                    <div class="metric-input-row">
+                        <label for="input-art">ARTS</label>
+                        <input type="number" id="input-art" value="4" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button id="download-btn" class="glow-btn">
+                    <span class="btn-text">DOWNLOAD PNG (STATIC)</span>
+                    <span class="btn-glow"></span>
+                </button>
+                <button id="download-gif-btn" class="glow-btn gif-btn">
+                    <span class="btn-text">DOWNLOAD GIF (ANIMATED)</span>
+                    <span class="btn-glow"></span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Preview Card Section (Right Side) -->
+        <section class="preview-panel">
+            <h2 class="panel-title">CARD PREVIEW</h2>
+            
+            <div class="card-outer-wrapper" id="card-capture-area">
+                <div id="seismic-card" class="seismic-card role-mag1">
+                    <!-- Baked-in scanlines for export fidelity -->
+                    <div class="card-crt-scanlines"></div>
+
+                    <!-- Pixel Frame Corners -->
+                    <div class="pixel-corner tl"></div>
+                    <div class="pixel-corner tr"></div>
+                    <div class="pixel-corner bl"></div>
+                    <div class="pixel-corner br"></div>
+
+                    <!-- Inner Stone Container -->
+                    <div class="card-inner">
+
+                        <!-- Top Bar: Game Title & Version -->
+                        <div class="card-header">
+                            <span class="card-game-title">SEISMIC CARD</span>
+                            <span class="card-serial" id="card-serial">ID // SC - 1540</span>
+                        </div>
+
+                        <!-- Main Graphic Area (big black zone, avatar inside) -->
+                        <div class="card-graphic-zone">
+                            <!-- Scanning line -->
+                            <div class="card-scanline"></div>
+
+                            <!-- Floating pixel particles -->
+                            <div class="pixel-particles">
+                                <span class="part p1"></span>
+                                <span class="part p2"></span>
+                                <span class="part p3"></span>
+                                <span class="part p4"></span>
+                            </div>
+
+                            <!-- Circular avatar with 3D shimmer ring -->
+                            <div class="avatar-zone">
+                                <div class="avatar-ring-outer">
+                                    <div class="ring-shimmer ring-shimmer-1"></div>
+                                    <div class="ring-shimmer ring-shimmer-2"></div>
+                                    <div class="avatar-ring-inner">
+                                        <img id="card-avatar" class="avatar-img" src="/default_avatar.png" alt="Profile" style="display: block;" />
+                                        <div class="avatar-placeholder" id="avatar-placeholder" style="display: none;">?</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Profile Info: Username, Role badge -->
+                        <div class="card-profile-section">
+                            <h3 class="profile-name" id="card-username">seismic_mag</h3>
+                            <div class="role-stamp-row">
+                                <div class="profile-badge">
+                                    <span class="badge-role" id="card-role-title">Magnitude 1.0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Metrics 2x2 -->
+                        <div class="card-metrics-grid">
+                            <div class="card-metric-box">
+                                <span class="metric-label">MESSAGES</span>
+                                <span class="metric-number" id="card-val-messages">1,540</span>
+                            </div>
+                            <div class="card-metric-box">
+                                <span class="metric-label">TWEETS</span>
+                                <span class="metric-number" id="card-val-tweets">184</span>
+                            </div>
+                            <div class="card-metric-box">
+                                <span class="metric-label">EVENTS</span>
+                                <span class="metric-number" id="card-val-events">12</span>
+                            </div>
+                            <div class="card-metric-box">
+                                <span class="metric-label">ARTS</span>
+                                <span class="metric-number" id="card-val-art">4</span>
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="card-footer">
+                            <span class="footer-status">STATUS // ACTIVE</span>
+                            <span class="footer-watermark">CORE VERIFIED</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="share-container" style="margin-top: -10px; margin-bottom: 20px; width: 100%; display: flex; justify-content: center; padding: 0 32px; box-sizing: border-box;">
+                <button id="share-twitter-btn" class="glow-btn twitter-btn" style="max-width: 380px;">
+                    <span class="btn-text">SHARE ON X</span>
+                    <span class="btn-glow"></span>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>SEISMIC CARD &copy; 2026. ALL RIGHTS RESERVED.</p>
+    </footer>
+
+    <input type="file" id="avatar-upload" accept="image/*" style="display: none;">
+
+    <script type="module" src="/main.js"></script>
+</body>
+</html>

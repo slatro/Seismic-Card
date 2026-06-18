@@ -1,0 +1,17 @@
+{
+  "name": "seismic-golem-profile-card",
+  "version": "1.0.0",
+  "description": "Pixel-art profile card generator for the Seismic Golem community.",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "gifshot": "^0.4.5",
+    "html2canvas": "^1.4.1"
+  },
+  "devDependencies": {
+    "vite": "^5.2.0"
+  }
+}
