@@ -105,6 +105,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+    align-self: start;
 }
 .control-group { display: flex; flex-direction: column; gap: 0.5rem; }
 .control-group > label { font-family: var(--font-pixel); font-size: 0.7rem; opacity: 0.85; }

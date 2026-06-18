@@ -155,10 +155,91 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+async function fetchStatsFromChannelHistory(userId) {
+    try {
+        const statsChannel = await client.channels.fetch(STATS_CHANNEL_ID).catch(() => null);
+        if (!statsChannel || !statsChannel.isTextBased()) return null;
+        
+        // Fetch last 100 messages to search for user's stats embed
+        const messages = await statsChannel.messages.fetch({ limit: 100 });
+        for (const msg of messages.values()) {
+            if (!msg.author.bot) continue;
+            
+            let textToSearch = msg.content || '';
+            if (msg.embeds && msg.embeds.length > 0) {
+                msg.embeds.forEach(embed => {
+                    if (embed.description) textToSearch += '\n' + embed.description;
+                    if (embed.title) textToSearch += '\n' + embed.title;
+                    if (embed.author && embed.author.name) textToSearch += '\n' + embed.author.name;
+                    if (embed.fields) {
+                        embed.fields.forEach(field => {
+                            textToSearch += `\n${field.name} ${field.value}`;
+                        });
+                    }
+                });
+            }
+            
+            // Check if the stats embed belongs to this user ID
+            if (textToSearch.includes(userId)) {
+                const eventsMatch = textToSearch.match(/events?\s*(?:joined|completed)?\s*[:\-=]?\s*(\d+)/i);
+                const artsMatch = textToSearch.match(/arts?\s*(?:count|created)?\s*[:\-=]?\s*(\d+)/i);
+                const messagesMatch = textToSearch.match(/(?:total\s*)?messages?\s*[:\-=]?\s*(\d+)/i);
+                
+                const parsed = {};
+                if (eventsMatch) parsed.events = parseInt(eventsMatch[1], 10);
+                if (artsMatch) parsed.arts = parseInt(artsMatch[1], 10);
+                if (messagesMatch) parsed.messages = parseInt(messagesMatch[1], 10);
+                
+                if (Object.keys(parsed).length > 0) {
+                    return parsed;
+                }
+            }
+        }
+    } catch (err) {
+        console.error('[Seismic Bot] Error scanning stats channel history:', err);
+    }
+    return null;
+}
+
+async function countUserTweetsFromHistory(userId) {
+    try {
+        const contentChannel = await client.channels.fetch(CONTENT_CHANNEL_ID).catch(() => null);
+        if (!contentChannel || !contentChannel.isTextBased()) return 0;
+        
+        let count = 0;
+        const messages = await contentChannel.messages.fetch({ limit: 100 });
+        for (const msg of messages.values()) {
+            if (msg.author.id === userId) {
+                count++;
+            }
+        }
+        return count;
+    } catch (err) {
+        console.error('[Seismic Bot] Error counting tweets from channel history:', err);
+    }
+    return 0;
+}
+
 // API route to get user stats
-app.get('/api/stats/:userId', (req, res) => {
+app.get('/api/stats/:userId', async (req, res) => {
     const userId = req.params.userId;
     const stats = getUserStats(userId);
+    
+    // Attempt to pull events, arts, and messages from stats channel embeds history
+    const scannedStats = await fetchStatsFromChannelHistory(userId);
+    if (scannedStats) {
+        if (scannedStats.messages !== undefined) stats.messages = scannedStats.messages;
+        if (scannedStats.events !== undefined) stats.events = scannedStats.events;
+        if (scannedStats.arts !== undefined) stats.arts = scannedStats.arts;
+    }
+    
+    // Count user messages in the content channel history as tweets
+    const tweetCount = await countUserTweetsFromHistory(userId);
+    if (tweetCount > 0) {
+        stats.tweets = Math.max(stats.tweets || 0, tweetCount);
+    }
+    
+    updateUserStats(userId, stats);
     res.json(stats);
 });
 

@@ -4,7 +4,24 @@ import gifshot from 'gifshot';
 // ─── Discord Configuration ──────────────────────────────────────
 const DISCORD_CLIENT_ID = '1517138500485513417';
 const DISCORD_GUILD_ID  = '1343751435711414362';
-const STATS_API_URL     = 'http://localhost:3000'; // Admin: Set your bot VPS API URL here (e.g. http://123.45.67.89:3000)
+// Dynamically determine the bot's API URL based on query parameter (?api=...), localStorage, or host origin
+const getApiUrl = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramApi = urlParams.get('api');
+    if (paramApi) {
+        localStorage.setItem('seismic_api_url', paramApi);
+        return paramApi;
+    }
+    const cached = localStorage.getItem('seismic_api_url');
+    if (cached) return cached;
+    
+    // Fallback logic
+    if (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) {
+        return 'http://localhost:3000';
+    }
+    return window.location.origin; // Assume backend runs on same origin (e.g. if bot serves UI)
+};
+const STATS_API_URL = getApiUrl();
 
 // Mapping of Discord Role ID -> Role key (mag1 to mag9, leader, administrator)
 // Admin can adjust these keys based on their live Discord server role IDs.
@@ -1179,7 +1196,7 @@ async function fetchDiscordUser(accessToken) {
             cardRoleTitle.textContent = "No Magnitude Role";
             seismicCard.className = `seismic-card role-mag1`;
             if (discordStatus) {
-                discordStatus.textContent = `Discord Linked: @${username} (No Magnitude role detected)`;
+                discordStatus.innerHTML = `Discord Linked: @${username} (No Magnitude role detected)<br><span style="font-size:0.65rem;font-weight:normal;opacity:0.8;display:block;margin-top:4px;color:#c9a76d;">Note: Configure your bot URL via: <strong style="color:#fff;">?api=http://YOUR_VPS_IP:3000</strong></span>`;
                 discordStatus.style.color = '#dfc086';
             }
         }
