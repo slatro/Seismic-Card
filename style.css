@@ -201,6 +201,12 @@ body {
     box-shadow: 0 0 5px var(--theme-glow);
     outline: none;
 }
+.metric-input-row input:disabled {
+    opacity: 0.45;
+    background-color: var(--bg-dark);
+    border-color: var(--stone-dark);
+    cursor: not-allowed;
+}
 .label-desc { font-size: 0.55rem; font-family: var(--font-sans); opacity: 0.55; vertical-align: middle; }
 
 /* Action Buttons */
