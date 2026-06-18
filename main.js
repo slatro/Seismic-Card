@@ -135,6 +135,13 @@ const STORAGE_NEXT_ID_KEY  = 'seismic_next_id';
 let userIdsMap = {};
 let nextId = 1;
 
+// Clear old IDs one time to start fresh from 001
+if (!localStorage.getItem('seismic_reset_done_v3')) {
+    localStorage.removeItem(STORAGE_USER_IDS_KEY);
+    localStorage.removeItem(STORAGE_NEXT_ID_KEY);
+    localStorage.setItem('seismic_reset_done_v3', 'true');
+}
+
 try {
     const storedMap = localStorage.getItem(STORAGE_USER_IDS_KEY);
     if (storedMap) userIdsMap = JSON.parse(storedMap);
@@ -757,13 +764,21 @@ function removeBg(src, callback) {
 }
 
 // ─── Events ────────────────────────────────────────────────────
+let lastCommittedName = usernameInput.value.trim();
+function commitUsername() {
+    const name = usernameInput.value.trim();
+    if (name === lastCommittedName) return;
+    lastCommittedName = name;
+    updateSerial();
+    loadAvatar(name);
+}
+
 usernameInput.addEventListener('input', (e) => {
     const name = e.target.value.trim();
     cardUsername.textContent = name ? name : 'operator';
-    updateSerial();
-    clearTimeout(avatarDebounce);
-    avatarDebounce = setTimeout(() => loadAvatar(name), 300);
 });
+usernameInput.addEventListener('change', commitUsername);
+usernameInput.addEventListener('blur', commitUsername);
 
 document.querySelectorAll('.role-btn').forEach(btn => {
     btn.addEventListener('click', () => {
